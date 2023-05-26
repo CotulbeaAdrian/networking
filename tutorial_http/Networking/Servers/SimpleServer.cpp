@@ -6,3 +6,8 @@ SimpleServer::SimpleServer(int domain, int service, int protocol,
         socket = new ListenSocket(domain, service, protocol, port,
         interface, bklg);
     }
+
+ListenSocket * SimpleServer::get_socket()
+{
+    return socket;
+}

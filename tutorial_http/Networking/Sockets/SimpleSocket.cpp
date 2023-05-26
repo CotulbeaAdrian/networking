@@ -9,8 +9,10 @@ SimpleSocket::SimpleSocket(int domain, int service, int protocol, int port,
     address.sin_addr.s_addr = htonl(interface);
 
     // Socket
+    std::cout<<"Simplle";
     sock = socket(domain, service, protocol);
     test_connection(sock);
+    std::cout<<"Simplle";
 
 }
 
