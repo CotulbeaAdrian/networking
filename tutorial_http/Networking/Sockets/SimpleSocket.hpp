@@ -21,6 +21,7 @@ class SimpleSocket{
         int get_sock();
         int get_connection();
         struct sockaddr_in get_address();
+        void set_connection(int);
 
 };
 
