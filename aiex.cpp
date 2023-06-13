@@ -1,58 +1,59 @@
 #include <iostream>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
+#include <string>
+#include <asio.hpp>
 
-using namespace boost::asio;
+using namespace asio;
+using namespace asio::ip;
 
-// Handles an incoming HTTPS connection
-void handleConnection(boost::asio::ssl::stream<ip::tcp::socket>& socket)
+// Handles an incoming HTTP request
+void handleRequest(tcp::socket& socket)
 {
-    // Perform SSL handshake
-    socket.handshake(boost::asio::ssl::stream_base::server);
-    
-    // Read the HTTP request
-    boost::asio::streambuf request;
-    boost::asio::read_until(socket, request, "\r\n\r\n");
-    
-    // Print the request
-    std::cout << "Received request:\n" << boost::asio::buffer_cast<const char*>(request.data()) << std::endl;
-    
-    // Send HTTP response
-    std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
-    boost::asio::write(socket, boost::asio::buffer(response));
-    
-    // Shutdown SSL and close the connection
-    socket.shutdown();
+    try
+    {
+        // Read the request
+        streambuf buffer;
+        asio::read_until(socket, buffer, "\r\n\r\n");
+
+        // Print the request
+        std::istream request_stream(&buffer);
+        std::string request;
+        std::getline(request_stream, request);
+        std::cout << "Received request: " << request << std::endl;
+
+        // Send HTTP response
+        std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
+        asio::write(socket, asio::buffer(response));
+
+        // Close the connection
+        socket.shutdown(tcp::socket::shutdown_both);
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
 }
 
 int main()
 {
     // Create the I/O context
-    boost::asio::io_context io_context;
-    
-    // Create an SSL context
-    boost::asio::ssl::context ssl_context(boost::asio::ssl::context::sslv23);
-    
-    // Load the server certificate and private key
-    ssl_context.use_certificate_chain_file("server.crt");
-    ssl_context.use_private_key_file("server.key", boost::asio::ssl::context::pem);
-    
-    // Create the acceptor and bind it to port 443 (HTTPS)
-    boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 443));
-    
+    asio::io_context io_context;
+
+    // Create the acceptor and bind it to port 8080
+    tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 8080));
+
     // Accept and handle incoming connections
     while (true)
     {
         // Create a socket
-        boost::asio::ssl::stream<ip::tcp::socket> socket(io_context, ssl_context);
-        
+        tcp::socket socket(io_context);
+
         // Wait for and accept a connection
-        acceptor.accept(socket.lowest_layer());
-        
+        acceptor.accept(socket);
+
         // Handle the connection
-        handleConnection(socket);
+        handleRequest(socket);
     }
-    
+
     return 0;
 }
 
